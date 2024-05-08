@@ -1,4 +1,4 @@
-from dynapyt.analyses import BaseAnalysis
+from dynapyt.analyses.BaseAnalysis import BaseAnalysis
 
 class TestAnalysis(BaseAnalysis):
     def begin_execution(self) -> None:
