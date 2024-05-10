@@ -1,0 +1,6 @@
+begin execution
+with statement entered
+content has been written to the file
+done with with statement
+file has been closed
+end execution

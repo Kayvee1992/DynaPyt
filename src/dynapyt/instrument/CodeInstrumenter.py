@@ -1867,3 +1867,67 @@ class CodeInstrumenter(m.MatcherDecoratableTransformer):
         return updated_node.with_changes(
             iter=generator_call, target=original_node.target
         )
+
+
+#####################################################################
+
+    def leave_With(
+        self, original_node, updated_node
+    ):
+
+        if (
+            "enter_with" not in self.selected_hooks
+            and "exit_with" not in self.selected_hooks
+        ):
+            return updated_node
+        
+        iid = self.__create_iid(original_node)
+        ast_arg = cst.Arg(value=cst.Name("_dynapyt_ast_"))
+        iid_arg = cst.Arg(value=cst.Integer(value=str(iid)))
+        
+        if ("enter_with" in self.selected_hooks):
+            callee_name = cst.Attribute(
+                value=cst.Name(value="_rt"), attr=cst.Name(value="_enter_with_")
+            )
+            self.to_import.add("_enter_with_")
+
+            if m.matches(updated_node.items[0].item, m.Call()):
+                with_item_func = cst.Arg(value=cst.Name(updated_node.items[0].item.func.value))
+                with_item_args = []
+                for arg in updated_node.items[0].item.args:
+                    with_item_args.append(cst.Element(value=arg.value))
+                with_item_args = cst.Arg(value=cst.List(elements=with_item_args))
+        
+            else:
+                with_item_func = cst.Arg(value=cst.Name("None"))
+                with_item_args = cst.Arg(value=cst.Name("None"))
+
+            call = cst.Call(func=callee_name, args=[ast_arg, iid_arg, with_item_func, with_item_args])
+            with_item = cst.WithItem(
+                item=call,
+                asname=updated_node.items[0].asname,
+                comma=updated_node.items[0].comma
+            )
+            with_items = [with_item]
+
+        else:
+            with_items = updated_node.items
+
+        # To be handled in the run time engine
+        # if ("exit_with" in self.selected_hooks):
+        #     callee_name = cst.Attribute(
+        #         value=cst.Name(value="_rt"), attr=cst.Name(value="_exit_with_")
+        #     )
+        #     self.to_import.add("_exit_with_")
+        #     end_call = cst.Call(func=callee_name, args=[ast_arg, iid_arg])
+        #     new_body=cst.IndentedBlock(
+        #         body=list(updated_node.body.body)
+        #         + [cst.SimpleStatementLine(body=[cst.Expr(value=end_call)])]
+        #     )
+        # else:
+        #     new_body = updated_node.body
+
+        return updated_node.with_changes(
+            items = with_items,
+            # body = new_body
+        )
