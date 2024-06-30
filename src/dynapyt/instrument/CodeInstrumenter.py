@@ -1867,3 +1867,39 @@ class CodeInstrumenter(m.MatcherDecoratableTransformer):
         return updated_node.with_changes(
             iter=generator_call, target=original_node.target
         )
+
+
+    def leave_With(
+        self, original_node, updated_node
+    ):
+        if (
+            "enter_with" not in self.selected_hooks
+            and "exit_with" not in self.selected_hooks
+        ):
+            return updated_node
+        
+        iid = self.__create_iid(original_node)
+        ast_arg = cst.Arg(value=cst.Name("_dynapyt_ast_"))
+        iid_arg = cst.Arg(value=cst.Integer(value=str(iid)))
+        
+        if ("enter_with" in self.selected_hooks):
+            name_arg = cst.Arg(value=updated_node.items[0].item)
+            callee_name = cst.Attribute(
+                value=cst.Name(value="_rt"), attr=cst.Name(value="_enter_with_")
+            )
+            self.to_import.add("_enter_with_")
+
+            call = cst.Call(func=callee_name, args=[ast_arg, iid_arg, name_arg])
+            with_item = cst.WithItem(
+                item=call,
+                asname=updated_node.items[0].asname,
+                comma=updated_node.items[0].comma
+            )
+            with_items = [with_item]
+
+        else:
+            with_items = updated_node.items
+
+        return updated_node.with_changes(
+            items = with_items,
+        )

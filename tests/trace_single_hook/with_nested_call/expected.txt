@@ -1,0 +1,41 @@
+begin execution
+runtime event
+runtime event
+control flow event
+pre call:  foo
+runtime event
+control flow event
+runtime event
+control flow event
+post call:  foo
+runtime event
+runtime event
+control flow event
+pre call:  open
+post call:  open
+runtime event
+control flow event
+with statement entered
+runtime event
+runtime event
+runtime event
+runtime event
+control flow event
+pre call:  write
+post call:  write
+runtime event
+runtime event
+control flow event
+pre call:  print
+content has been written to the file
+post call:  print
+runtime event
+control flow event
+with statement exited
+runtime event
+runtime event
+control flow event
+pre call:  print
+file has been closed
+post call:  print
+end execution

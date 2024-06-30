@@ -1,0 +1,6 @@
+begin execution
+with statement entered
+content has been written to the file
+with statement exited
+An error occurred:  I/O operation on closed file.
+end execution
