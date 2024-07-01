@@ -1882,12 +1882,12 @@ class CodeInstrumenter(m.MatcherDecoratableTransformer):
         ast_arg = cst.Arg(value=cst.Name("_dynapyt_ast_"))
         iid_arg = cst.Arg(value=cst.Integer(value=str(iid)))
         
-        name_arg = cst.Arg(value=updated_node.items[0].item)
+        ctx_manager_arg = cst.Arg(value=updated_node.items[0].item)
         callee_name = cst.Attribute(
             value=cst.Name(value="_rt"), attr=cst.Name(value="_enter_with_")
         )
         self.to_import.add("_enter_with_")
-        call = cst.Call(func=callee_name, args=[ast_arg, iid_arg, name_arg])
+        call = cst.Call(func=callee_name, args=[ast_arg, iid_arg, ctx_manager_arg])
         with_item = cst.WithItem(
             item=call,
             asname=updated_node.items[0].asname,
