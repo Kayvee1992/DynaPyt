@@ -814,7 +814,7 @@ def _gen_(dyn_ast, iid, iterator):
 def _enter_with_(dyn_ast, iid, ctx_manager_arg):
     call_if_exists("runtime_event", dyn_ast, iid)
     call_if_exists("control_flow_event", dyn_ast, iid)
-    call_if_exists("enter_with", dyn_ast, iid, ctx_manager_arg, None)
+    call_if_exists("enter_with", dyn_ast, iid, ctx_manager_arg)
     is_suppressed = False
     ctx_manager = ctx_manager_arg
     return_value = ctx_manager.__enter__()
