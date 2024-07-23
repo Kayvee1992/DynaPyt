@@ -1894,10 +1894,4 @@ class CodeInstrumenter(m.MatcherDecoratableTransformer):
         )
         self.to_import.add("_enter_with_")
         call = cst.Call(func=callee_name, args=[ast_arg, iid_arg, ctx_manager_arg])
-        with_item = cst.WithItem(
-            item=call,
-            asname=item.asname,
-            comma=item.comma,
-        )
-
-        return with_item
+        return updated_node.with_changes(item=call)
