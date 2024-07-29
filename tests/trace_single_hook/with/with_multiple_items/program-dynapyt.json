@@ -1,0 +1,19 @@
+{
+  "next_iid": 2,
+  "iid_to_location": {
+    "0": {
+      "file": "/Users/keerthiv/Masters/Masters/University_of_Stuttgart/Job/dynapyt/dynapyt/DynaPyt/tests/trace_single_hook/with/with_multiple_items/program.py.orig",
+      "start_line": 6,
+      "start_column": 5,
+      "end_line": 6,
+      "end_column": 36
+    },
+    "1": {
+      "file": "/Users/keerthiv/Masters/Masters/University_of_Stuttgart/Job/dynapyt/dynapyt/DynaPyt/tests/trace_single_hook/with/with_multiple_items/program.py.orig",
+      "start_line": 6,
+      "start_column": 38,
+      "end_line": 6,
+      "end_column": 69
+    }
+  }
+}

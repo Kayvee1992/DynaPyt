@@ -61,9 +61,11 @@ def get_used_leaves(
 
 
 def get_hooks_from_analysis(classes: List[str]) -> Dict[str, Dict[str, List[str]]]:
+    print(classes)
     try:
         methods = {}
         analyses = load_analyses(classes)
+        print("analyses: ", analyses)
         for instance in analyses:
             methods.update(
                 {
