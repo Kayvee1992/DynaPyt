@@ -3,15 +3,17 @@ from inspect import getmembers, isclass
 import json
 from pathlib import Path
 import pytest
-
 from dynapyt.analyses.BaseAnalysis import BaseAnalysis
 from dynapyt.instrument.instrument import instrument_file
 from dynapyt.utils.hooks import get_hooks_from_analysis
+import subprocess
+import sys
+
 
 def run_project(project: Path):
     project_dir = project.resolve()
     json_report_file = project_dir / "result.json"
-    result = pytest.main(["-v", "--json-report", "--json-report-file="+str(json_report_file), str(project_dir/"tests"), ])
+    result = pytest.main(["-v", "--cache-clear", "--json-report", "--json-report-file="+str(json_report_file), str(project_dir/"tests"), ])
     with open(json_report_file, "r") as f:
         result = f.read()
 
@@ -19,9 +21,9 @@ def run_project(project: Path):
     test_result_map = {}
     for item in result_json["tests"]:
         test_result_map[item["nodeid"]] = item["outcome"]
-    print(f"Test result without instrumentation: ")
-    for key, value in test_result_map.items():
-        print(f"{key}: {value}")
+    # print(f"Test result without instrumentation: ")
+    # for key, value in test_result_map.items():
+    #     print(f"{key}: {value}")
 
     json_report_file.unlink()
 
@@ -29,22 +31,17 @@ def run_project(project: Path):
 
 
 def run_instrumented_project(project):
-    module = import_module(f"analysis.analysis")
-    analysis_classes = getmembers(
-        module,
-        lambda c: isclass(c) and issubclass(c, BaseAnalysis) and c != BaseAnalysis,
-    )
-    print(f"Analysis classes: {analysis_classes}")
-    print(f"Module: {module}")
+
     selected_hooks = get_hooks_from_analysis(["analysis.analysis.Analysis"])
-    print(f"Selected hooks: {selected_hooks}")
+    # print(f"Selected hooks: {selected_hooks}")
     project_dir = project.resolve()
     project_src_dir = project_dir / "src"
     for code_file in project_src_dir.rglob("*.py"):
         instrument_file(str(project_dir / code_file), selected_hooks)
 
     json_report_file = project_dir / "instrumented_result.json"
-    result = pytest.main(["-v", "--json-report", "--json-report-file="+str(json_report_file), str(project_dir/"tests"), ])
+    install_project(project)
+    result = pytest.main(["-v", "--cache-clear", "--json-report", "--json-report-file="+str(json_report_file), str(project_dir/"tests"), ])
     with open(json_report_file, "r") as f:
         result = f.read()
     
@@ -52,9 +49,9 @@ def run_instrumented_project(project):
     test_result_map = {}
     for item in result_json["tests"]:
         test_result_map[item["nodeid"]] = item["outcome"]
-    print(f"Test result with instrumentation: ")
-    for key, value in test_result_map.items():
-        print(f"{key}: {value}")
+    # print(f"Test result with instrumentation: ")
+    # for key, value in test_result_map.items():
+    #     print(f"{key}: {value}")
 
     # Clean up the project
     for code_file in project_dir.rglob("*.py.orig"):
@@ -74,36 +71,66 @@ def run_instrumented_project(project):
 
     return test_result_map
 
+def clear_pytest_cache():
+    subprocess.run(["pytest", "--cache-clear"])
+
 
 def run_tests(projects_dir):
+    invariance_test_node_id = "tests/stack_test.py::test_stack"
     failed = False
     # Run the tests with and without instrumentation
     for project in projects_dir.iterdir():
+        print(f"Installing project {project.name}")
+        install_project(project)
         print(f"Running project {project.name}")
+        # test_result = {}
         test_result = run_project(project)
+        clear_pytest_cache()
         instrumented_test_result = run_instrumented_project(project)
+        # instrumented_test_result = {}
         for test, result in test_result.items():
             if (test not in instrumented_test_result):
                 print(f"Test {test} not found in instrumented test results")
                 failed = True
                 break
+            if test == invariance_test_node_id:
+                if (result == instrumented_test_result[test]):
+                    print(f"Test {test} results match for invariance test")
+                    failed = True
+                    break
+                else:
+                    continue
             if (result != instrumented_test_result[test]):
                 print(f"Test {test} results do not match")
                 failed = True
                 break
-        print(f"Test results match for project {project.name} before and after instrumentation")
-    print(f"All tests passed for projects in folder {projects_dir}")
+        sys.path.remove(str(project / "src"))
+        sys.path.remove(str(project.parent))
 
     if failed:
         print("Test results do not match before and after instrumentation")
         return False
+    
+    print(f"All tests passed for projects in folder {projects_dir}")
+
     return True
+
+
+def install_project(projects_dir):
+    subprocess.run(["pip", "install", "-e", str(projects_dir)])
+    requirements_file = projects_dir / "requirements.txt"
+    if requirements_file.exists():
+        subprocess.run(["pip", "install", "-r", str(requirements_file)])
+    sys.path.append(str(projects_dir / "src"))
+    sys.path.append(str(projects_dir.parent))
 
 
 def run_test_on_projects():
     is_successful = True
     dynapyt_dir = Path(__file__).parent.parent
-    with open("test_folders.txt", "r") as f:
+    execution_invariance_test_dir = Path(__file__).parent
+    test_folders_file = execution_invariance_test_dir / "test_folders.txt"
+    with open(test_folders_file, "r") as f:
         while True:
             line = f.readline()
             if not line:
@@ -118,7 +145,6 @@ def run_test_on_projects():
     else:
         print("Some tests failed")
     return is_successful
-
 
 
 if __name__ == "__main__":

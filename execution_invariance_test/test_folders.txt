@@ -1,1 +1,1 @@
-end2end_tests/projects
+execution_invariance_test/projects
