@@ -2,6 +2,7 @@ from importlib import import_module
 from inspect import getmembers, isclass
 import json
 from pathlib import Path
+import time
 import pytest
 from dynapyt.analyses.BaseAnalysis import BaseAnalysis
 from dynapyt.instrument.instrument import instrument_file
@@ -39,8 +40,8 @@ def run_instrumented_project(project):
     for code_file in project_src_dir.rglob("*.py"):
         instrument_file(str(project_dir / code_file), selected_hooks)
 
-    json_report_file = project_dir / "instrumented_result.json"
     install_project(project)
+    json_report_file = project_dir / "instrumented_result.json"
     result = pytest.main(["-v", "--cache-clear", "--json-report", "--json-report-file="+str(json_report_file), str(project_dir/"tests"), ])
     with open(json_report_file, "r") as f:
         result = f.read()
@@ -72,7 +73,25 @@ def run_instrumented_project(project):
     return test_result_map
 
 def clear_pytest_cache():
-    subprocess.run(["pytest", "--cache-clear"])
+    subprocess.run(["pytest", "--cache-clear"], check=True)
+
+def remove_related_modules(project):
+    project_module = project.name.replace("-", "_")
+
+    project_src_dir = project / "src"
+    for code_file in project_src_dir.rglob("*.py"): 
+        module_name = project_module + "." + code_file.stem
+        if module_name in sys.modules:
+            print(f"Deleting module {module_name}")
+            del sys.modules[module_name]
+            
+    project_test_dir = project / "tests"
+    for code_file in project_test_dir.rglob("*.py"):
+        module_name = code_file.stem
+        if module_name in sys.modules:
+            print(f"Deleting module {module_name}")
+            del sys.modules[module_name]
+
 
 
 def run_tests(projects_dir):
@@ -85,7 +104,21 @@ def run_tests(projects_dir):
         print(f"Running project {project.name}")
         # test_result = {}
         test_result = run_project(project)
-        clear_pytest_cache()
+        # print available modules
+        print("Modules: ", sys.modules.keys())
+        # del sys.modules["simple_test.simple"]
+        # # del sys.modules["simple_test"]
+        # del sys.modules["stack_test"]
+        remove_related_modules(project)
+        # install_project(project)
+        # delete all .pyc files
+        for pyc_file in project.rglob("*.pyc"):
+            pyc_file.unlink()
+        #delete all __pycache__ folders
+        for pycache_folder in project.rglob("__pycache__"):
+            pycache_folder.rmdir()
+
+        # clear_pytest_cache()
         instrumented_test_result = run_instrumented_project(project)
         # instrumented_test_result = {}
         for test, result in test_result.items():
